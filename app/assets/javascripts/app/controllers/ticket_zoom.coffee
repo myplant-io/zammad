@@ -93,7 +93,7 @@ class App.TicketZoom extends App.Controller
     @ajax(
       id:    "ticket_zoom_#{@ticket_id}"
       type:  'GET'
-      url:   "#{@apiPath}/tickets/#{@ticket_id}?all=true"
+      url:   "#{@apiPath}/tickets/#{@ticket_id}?all=true&auto_assign=true"
       processData: true
       queue: queue
       success: (data, status, xhr) =>
@@ -335,7 +335,7 @@ class App.TicketZoom extends App.Controller
 
   hide: =>
     @activeState = false
-    $('body > .modal').modal('hide')
+    $('body > .modal').modal('hide') if @shown
     @positionPageHeaderStop()
     @autosaveStop()
     @shortcutNavigationstop()
@@ -556,26 +556,6 @@ class App.TicketZoom extends App.Controller
         mentions:     @mentions
         links:        @links
       )
-
-      # check if autolock is needed
-      if @Config.get('ticket_auto_assignment') is true
-        if @ticket.owner_id is 1 && @permissionCheck('ticket.agent') && @ticket.editable('full')
-          userIdsIgnore = @Config.get('ticket_auto_assignment_user_ids_ignore') || []
-          if !_.isArray(userIdsIgnore)
-            userIdsIgnore = [userIdsIgnore]
-          userIgnored = false
-          currentUserId = App.Session.get('id')
-          for userIdIgnore in userIdsIgnore
-            if userIdIgnore.toString() is currentUserId.toString()
-              userIgnored = true
-              break
-          if userIgnored is false
-            ticket_auto_assignment_selector = @Config.get('ticket_auto_assignment_selector')
-            if App.Ticket.selector(@ticket, ticket_auto_assignment_selector['condition'])
-              assign = =>
-                @ticket.owner_id = App.Session.get('id')
-                @ticket.save()
-              @delay(assign, 800, "ticket-auto-assign-#{@ticket.id}")
 
     # render init content
     if elLocal
@@ -1228,6 +1208,41 @@ class TicketZoomRouter extends App.ControllerPermanent
   constructor: (params) ->
     super
 
+    return @byNumber(params) if params.ticket_number
+    @byTicketId(params)
+
+  byNumber: (params) ->
+    return @byTicketId(params) if !params.ticket_number
+    return @byTicketId(params) if params.ticket_id
+
+    number = params.ticket_number
+    delete params.ticket_number
+
+    ticket = App.Ticket.findByAttribute('number', number)
+    return @navigate("ticket/zoom/#{ticket.id}") if ticket
+
+    App.Ajax.request(
+      type:  'POST'
+      url:   "#{@apiPath}/tickets/search"
+      processData: true
+      data: JSON.stringify(
+        condition: {
+          'ticket.number': {
+            operator: 'is',
+            value: number
+          }
+        }
+        limit: 1
+      )
+      success: (data, status, xhr) =>
+        return @byTicketId(params) if _.isEmpty(data.tickets)
+        @navigate("ticket/zoom/#{data.tickets[0]}")
+      error: =>
+        @byTicketId(params)
+    )
+
+  byTicketId: (params) ->
+
     # cleanup params
     clean_params =
       ticket_id:  params.ticket_id
@@ -1242,6 +1257,7 @@ class TicketZoomRouter extends App.ControllerPermanent
       show:       true
     )
 
+App.Config.set('ticket/zoom/number/:ticket_number', TicketZoomRouter, 'Routes')
 App.Config.set('ticket/zoom/:ticket_id', TicketZoomRouter, 'Routes')
 App.Config.set('ticket/zoom/:ticket_id/nav/:nav', TicketZoomRouter, 'Routes')
 App.Config.set('ticket/zoom/:ticket_id/:article_id', TicketZoomRouter, 'Routes')

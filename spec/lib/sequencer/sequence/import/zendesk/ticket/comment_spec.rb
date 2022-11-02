@@ -13,6 +13,8 @@ RSpec.describe ::Sequencer::Sequence::Import::Zendesk::Ticket::Comment, sequence
 
     let(:ticket) { create(:ticket) }
 
+    let(:inline_image_url) { "https://#{hostname}/attachments/token/khRQTQjm8ODhA0FjbS39i4xOb/?name=1a3496b9-53d9-494d-bbb0-e1d2e22074f8.jpeg" }
+
     let(:resource) do
       ZendeskAPI::Ticket::Comment.new(
         nil,
@@ -20,9 +22,7 @@ RSpec.describe ::Sequencer::Sequence::Import::Zendesk::Ticket::Comment, sequence
           'id'          => 31_964_468_581,
           'type'        => 'Comment',
           'author_id'   => 1_150_734_731,
-          'body'        => 'This is the latest comment for this ticket. You also changed the ticket status to Pending.',
-          'html_body'   => '<div class="zd-comment" dir="auto"><p dir="auto">This is the latest comment for this ticket. You also changed the ticket status to Pending.</p></div>',
-          'plain_body'  => 'This is the latest comment for this ticket. You also changed the ticket status to Pending.',
+          'html_body'   => "<div class=\"zd-comment\" dir=\"auto\"><p dir=\"auto\">This is the latest comment for this ticket. You also changed the ticket status to Pending.</p><span style=\"opacity: 1;\"><img src=\"#{inline_image_url}\"></span><a href=\"/agent/tickets/1\" rel=\"ticket\">#1</a></p></div>",
           'public'      => true,
           'attachments' => [
             {
@@ -57,7 +57,7 @@ RSpec.describe ::Sequencer::Sequence::Import::Zendesk::Ticket::Comment, sequence
               'rel'  => nil
             },
           },
-          'created_at'  => '2015-07-19 22:41:44 UTC',
+          'created_at'  => '2018-09-28T12:00:00Z',
           'metadata'    => {
             'system' => {},
             'custom' => {}
@@ -85,9 +85,11 @@ RSpec.describe ::Sequencer::Sequence::Import::Zendesk::Ticket::Comment, sequence
 
     let(:imported_article) do
       {
-        from: 'john.doe@example.com',
-        to:   'zendesk@example.com',
-        body: '<div dir="auto"><p dir="auto">This is the latest comment for this ticket. You also changed the ticket status to Pending.</p></div>'
+        from:       'john.doe@example.com',
+        to:         'zendesk@example.com',
+        body:       "\n<div dir=\"auto\">\n<p dir=\"auto\">This is the latest comment for this ticket. You also changed the ticket status to Pending.</p>\n<span><img src=\"data:image/png;base64,MTIz\"></span><a href=\"/#ticket/zoom/1\" rel=\"ticket\">#1</a>\n</div>\n",
+        created_at: Time.zone.parse('2018-09-28T12:00:00Z'),
+        updated_at: Time.zone.parse('2018-09-28T12:00:00Z'),
       }
     end
 

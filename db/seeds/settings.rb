@@ -996,6 +996,32 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
+  title:       __('Maximum number of ticket shown in overviews'),
+  name:        'ui_ticket_overview_ticket_limit',
+  area:        'UI::TicketOverview::TicketLimit',
+  description: __('Define the maximum number of ticket shown in overviews.'),
+  options:     {},
+  state:       2000,
+  preferences: {
+    permission: ['admin.overview'],
+  },
+  frontend:    true
+)
+
+Setting.create_if_not_exists(
+  title:       __('Maximum number of allowed tasks before auto cleanup removes surplus tasks.'),
+  name:        'ui_task_mananger_max_task_count',
+  area:        'UI::TaskManager::Task::MaxCount',
+  description: __('Defines the maximum number of allowed task bar tasks before auto cleanup removes surplus tasks when creating new tasks.'),
+  options:     {},
+  state:       30,
+  preferences: {
+    permission: ['admin.ui'],
+  },
+  frontend:    true
+)
+
+Setting.create_if_not_exists(
   title:       __('New User Accounts'),
   name:        'user_create_account',
   area:        'Security::Base',

@@ -65,6 +65,11 @@ class Ticket < ApplicationModel
                                      :last_owner_update_at,
                                      :preferences
 
+  search_index_attributes_relevant :organization_id,
+                                   :group_id,
+                                   :state_id,
+                                   :priority_id
+
   history_attributes_ignored :create_article_type_id,
                              :create_article_sender_id,
                              :article_count,
@@ -168,6 +173,31 @@ returns
     end
 
     result
+  end
+
+  def auto_assign(user)
+    return if !persisted?
+    return if Setting.get('ticket_auto_assignment').blank?
+    return if owner_id != 1
+    return if !TicketPolicy.new(user, self).full?
+
+    user_ids_ignore = Array(Setting.get('ticket_auto_assignment_user_ids_ignore')).map(&:to_i)
+    return if user_ids_ignore.include?(user.id)
+
+    ticket_auto_assignment_selector = Setting.get('ticket_auto_assignment_selector')
+    return if ticket_auto_assignment_selector.blank?
+
+    condition = ticket_auto_assignment_selector[:condition].merge(
+      'ticket.id' => {
+        'operator' => 'is',
+        'value'    => id,
+      }
+    )
+
+    ticket_count, = Ticket.selectors(condition, limit: 1, current_user: user, access: 'full')
+    return if ticket_count.to_i.zero?
+
+    update!(owner: user)
   end
 
 =begin
@@ -951,23 +981,7 @@ perform changes on ticket
                     when 'static'
                       value['value']
                     when 'relative'
-                      pendtil = Time.zone.now
-                      val     = value['value'].to_i
-
-                      case value['range']
-                      when 'day'
-                        pendtil += val.days
-                      when 'minute'
-                        pendtil += val.minutes
-                      when 'hour'
-                        pendtil += val.hours
-                      when 'month'
-                        pendtil += val.months
-                      when 'year'
-                        pendtil += val.years
-                      end
-
-                      pendtil
+                      TimeRangeHelper.relative(range: value['range'], value: value['value'])
                     end
 
         if new_value

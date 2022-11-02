@@ -1,6 +1,6 @@
-<div class="dropdown-toggle<%=" tokenfield form-control" if @attribute.multiple %>" data-toggle="dropdown">
+<div class="dropdown-toggle<%=" tokenfield form-control" if @attribute.multiple %> <% if @attribute.disabled: %> is-disabled<% end %>" data-toggle="dropdown">
   <% if @attribute.multiple: %>
-    <select multiple class="js-shadow hide" name="<%- @attribute.name %>" tabindex="-1">
+    <select multiple class="js-shadow hide" name="<%- @attribute.name %>" tabindex="-1" <% if @attribute.disabled: %> disabled<% end %>>
       <% if @attribute.value: %>
         <% for option in @attribute.value: %>
           <option value="<%= option.value %>" selected><%= option.name %></option>
@@ -14,7 +14,6 @@
       value
       name="<%- @attribute.name %>_completion"
       autocomplete="off"
-      <%= @attribute.required %>
       <% if @attribute.disabled: %> disabled<% end %>
     >
   <% else: %>
@@ -22,7 +21,6 @@
       class="searchableSelect-shadow form-control js-shadow"
       <% if @attribute.id: %>id="<%= @attribute.id %>"<% end %>
       name="<%= @attribute.name %>"
-      <%= @attribute.required %>
       <%= @attribute.autofocus %>
       value="<%= @attribute.value %>"
       tabindex="-1"
@@ -33,7 +31,6 @@
       placeholder="<%= @attribute.placeholder %>"
       value="<%= @attribute.valueName %>"
       autocomplete="off"
-      <%= @attribute.required %>
       <% if @attribute.disabled: %> disabled<% end %>
     >
   <% end %>
